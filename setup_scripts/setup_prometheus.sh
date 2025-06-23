@@ -15,7 +15,7 @@ DATA_DIR="/var/lib/prometheus"
 CONFIG_DIR="/etc/prometheus"
 BIN_DIR="/usr/local/bin"
 SERVICE_FILE="/etc/systemd/system/prometheus.service"
-TEMPLATE_DIR="$(dirname "$0")"
+TEMPLATE_DIR="$(dirname "$0")/prometheus_files"
 FORCE_INSTALL=false
 
 # Parse optional --force flag
