@@ -40,16 +40,32 @@ if [[ ! -x "$BIN_DIR/prometheus" || $FORCE_INSTALL == true ]]; then
     cd /tmp
     curl -sLO "https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz"
     tar -xzf "prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz"
-    cd "prometheus-${PROMETHEUS_VERSION}.linux-amd64"
+
+    # Detect extracted folder
+    EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "prometheus-${PROMETHEUS_VERSION}.linux-amd64" | head -n1)
+
+    if [[ ! -d "$EXTRACTED_DIR" ]]; then
+        echo "[ERROR] Failed to extract Prometheus archive."
+        exit 1
+    fi
+
+    cd "$EXTRACTED_DIR"
 
     cp prometheus promtool "$BIN_DIR/"
     chmod +x "$BIN_DIR/prometheus" "$BIN_DIR/promtool"
 
-    cp -r consoles console_libraries "$INSTALL_DIR/"
+    # Only copy consoles if they exist
+    if [[ -d "consoles" && -d "console_libraries" ]]; then
+        cp -r consoles console_libraries "$INSTALL_DIR/"
+    else
+        echo "[WARN] consoles/ or console_libraries/ missing in the archive. Skipping copy."
+    fi
+
     echo "[INFO] Prometheus binaries installed to $BIN_DIR"
 else
     echo "[INFO] Prometheus already installed. Use --force to reinstall."
 fi
+
 
 # === Config ===
 PROM_CONFIG="$CONFIG_DIR/prometheus.yml"
