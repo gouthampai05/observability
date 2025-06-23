@@ -1,0 +1,33 @@
+[Unit]
+Description=Grafana
+Documentation=http://docs.grafana.org
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+EnvironmentFile=-/etc/default/grafana
+User=grafana
+Group=grafana
+Type=notify
+Restart=on-failure
+WorkingDirectory=/usr/share/grafana
+RuntimeDirectory=grafana
+RuntimeDirectoryMode=0750
+ExecStart=/usr/share/grafana/bin/grafana server \
+          --config=${CONF_FILE} \
+          --pidfile=${PID_FILE_DIR}/grafana-server.pid \
+          --packaging=tar \
+          cfg:default.paths.logs=${LOG_DIR} \
+          cfg:default.paths.data=${DATA_DIR} \
+          cfg:default.paths.plugins=${DATA_DIR}/plugins \
+          cfg:default.paths.provisioning=${CONF_DIR}/provisioning
+
+LimitNOFILE=10000
+TasksMax=infinity
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=grafana
+
+[Install]
+WantedBy=multi-user.target

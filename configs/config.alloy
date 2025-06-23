@@ -1,0 +1,91 @@
+// NOTE: The file paths in this file is based on linux file system conventions, probably have to adjust for Windows paths if required.
+
+// sync_period set to 5 seconds for frequent updates for dev and test, adjust as needed.
+local "config" {
+  loki_sync_period = "5s"
+}
+
+//Each log file has its own local.file_match block so that it can be labellled based on the log file name
+//Thus serving as index for the log file in Loki
+
+local.file_match "mobile_banking_logs" {
+  path_targets = [{ __path__ = "Admin/D:/Source/ReachMB_V2/Logs/financial/mobileBanking.log" }]
+  sync_period  = local.config.loki_sync_period
+}
+local.file_match "request_response_logs" {
+  path_targets = [{ __path__ = "Admin/D:/Source/ReachMB_V2/Logs/financial/requestresponse.log" }]
+  sync_period  = local.config.loki_sync_period
+}
+local.file_match "user_activity_logs" {
+  path_targets = [{ __path__ = "Admin/D:/Source/ReachMB_V2/Logs/financial/UserActivity.log" }]
+  sync_period  = local.config.loki_sync_period
+}
+
+// Source: Each file forwarded to a corresponding processor
+loki.source.file "mobile_banking_logs_src" {
+  targets       = local.file_match.mobile_banking_logs.targets
+  forward_to    = [loki.process.mobile_banking_labels.receiver]
+  tail_from_end = true
+}
+
+loki.source.file "request_response_logs_src" {
+  targets       = local.file_match.request_response_logs.targets
+  forward_to    = [loki.process.request_response_labels.receiver]
+  tail_from_end = true
+}
+
+loki.source.file "user_activity_logs_src" {
+  targets       = local.file_match.user_activity_logs.targets
+  forward_to    = [loki.process.user_activity_labels.receiver]
+  tail_from_end = true
+}
+
+// Process: Set custom log_type label for each source
+loki.process "mobile_banking_labels" {
+  forward_to = [loki.write.grafana_loki.receiver]
+
+  stage.static_labels {
+    values = {
+      log_type = "mobile_banking"
+    }
+  }
+}
+
+loki.process "request_response_labels" {
+  forward_to = [loki.write.grafana_loki.receiver]
+
+  stage.static_labels {
+    values = {
+      log_type = "request_response"
+    }
+  }
+}
+
+loki.process "user_activity_labels" {
+  forward_to = [loki.write.grafana_loki.receiver]
+
+  stage.static_labels {
+    values = {
+      log_type = "user_activity"
+    }
+  }
+}
+
+loki.write "grafana_loki" {
+  endpoint {
+    url = "http://host.docker.internal:3100/loki/api/v1/push"
+  }
+}
+
+prometheus.remote_write "grafana_prometheus" {
+  endpoint {
+    url = "http://host.docker.internal:9090/api/v1/write"
+  }
+}
+
+prometheus.scrape "springboot_prometheus_metrics" {
+  targets = [
+    { __address__ = "localhost:8080", __scheme__ = "http", __metrics_path__ = "/actuator/prometheus", },
+  ]
+  forward_to = [prometheus.remote_write.default.receiver]
+}

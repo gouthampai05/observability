@@ -1,0 +1,14 @@
+[Unit]
+Description=Grafana Loki Log Aggregator
+After=network.target
+
+[Service]
+Type=simple
+User=${LOKI_USER}
+Group=${LOKI_GROUP}
+ExecStart=${INSTALL_DIR}/loki -config.file=${CONFIG_DIR}/loki-config.yaml
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

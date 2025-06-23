@@ -1,0 +1,23 @@
+[Unit]
+Description=Prometheus Monitoring
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=${USER}
+Group=${GROUP}
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+  --config.file=${CONFIG_DIR}/prometheus.yml \
+  --storage.tsdb.path=${DATA_DIR} \
+  --web.console.templates=${INSTALL_DIR}/consoles \
+  --web.console.libraries=${INSTALL_DIR}/console_libraries \
+  --web.listen-address=0.0.0.0:9090 \
+  --storage.tsdb.retention.time=15d \
+  --storage.tsdb.retention.size=10GB
+
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
